@@ -1,5 +1,5 @@
 ---
-ytitle: "ML Project Writeup"
+title: "Coursera ML Project Writeup"
 author: "MM"
 date: "August 22, 2015"
 output: html_document
@@ -24,13 +24,14 @@ In the training set, the [**classe**] variable represents how well each particip
 
 ### Selection of Predictor Variables
 
-We begin by splitting the dataset into training and testing sets.
+We begin by splitting the dataset into training and testing sets so that we can perform cross validation and calculate an out of sample error rate on our model.
 
-```{r, cache=TRUE, results="hide"}
+```{r, results='hide'}
 ## Working directory must be set
 ## Load package dependencies
-library(caret)
+library(lattice)
 library(ggplot2)
+library(caret)
 library(randomForest)
 
 ## Load the dataset
@@ -42,7 +43,7 @@ training <- data[inTrain, ]
 testing <- data[-inTrain, ]
 ```
 
-By examining the structure of the training set, we notice a high proportion of `NA` values in a high number of columns.  The prediction model will exclude columns that have greater than 90% of its values as `NA`.  We also remove variables that are not of a numeric class under the assumption that non-numeric variables would not provide much predictive value as it relates to accelerometer measurements.
+By examining the structure of the training set, we notice a high proportion of `NA` values in a high number of columns.  The prediction model will exclude columns that have greater than 90% of its values as `NA`.  We also remove variables that are not of a numeric class under the assumption that non-numeric variables will not provide much predictive value as it relates to accelerometer measurements.
 
 ```{r}
 ## Define function to measure proportion of NA values in a given column
@@ -67,7 +68,7 @@ trainsub <- trainsub[ , !grepl("kurtosis", names(trainsub)) &
 
 Given the complexity of the remaining measurements, we've elected to apply a **Random Forest** model to determine variable importance automatically.  Due to processing time constraints, we've limited the number of trees to 100.  We will use **5-fold cross validation** when applying the algorithm. 
 
-```{r, cache=TRUE}
+```{r}
 ## Train the model on the testing set
 modFit <- train(classe~., 
                 data=trainsub, 
@@ -97,9 +98,10 @@ pred <- predict(modFit, newdata=testsub)
 confusionMatrix(testing$classe, pred)
 
 accuracy <- confusionMatrix(testing$classe, pred)$overall[1]
+oos <- 1 - accuracy
 ```
 
-From the output above we are acheiving high accuracy: `r accuracy`. We see an **out of bag error rate** of 1.08%.
+From the output above we are acheiving high accuracy: `r accuracy`. We see an **out of sample error rate** of `r oos`.
 
 ```{r}
 modFit$finalModel
@@ -108,7 +110,21 @@ modFit$finalModel
 
 ## Conclusion
 
-Of the machine learnging algorithms were applied, the Random Forest model achieved best results with classifying how well dumbell lifts were performed based on measured accelerometer data.
+**Model Selection**: Of the machine learning algorithms were applied, the Random Forest model achieved the highest accuracy when classifying how well dumbell lifts were performed based on measured accelerometer data.
+
+**Cross Validation**: The model used 5-fold cross validation to ensure robust accuracy.  Similar accuracies were observed in each fold.  
+
+**Out of Sample Error**: A separate testing set was cut from the training data to calculate an out of sample error rate.  The model was not trained on this set.
+
+**Quiz Submission Preview**: Results for the 20 test cases under the Programming Assignment portion of this project can be viewed here:
+
+```{r}
+## Read the programming assignment test set
+part2test <- read.csv("pml-testing.csv")
+
+## Run the prediction model
+predict(modFit, newdata=part2test[ , names(testsub)])
+```
 
 ## Appendix
 
